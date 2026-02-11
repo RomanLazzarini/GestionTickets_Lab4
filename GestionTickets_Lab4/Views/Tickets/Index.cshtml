@@ -1,0 +1,86 @@
+﻿@model IEnumerable<GestionTickets_Lab4.Models.Ticket>
+
+@{
+    ViewData["Title"] = "Gestión de Tickets";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-primary">Tickets Registrados</h2>
+        <a asp-action="Create" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Nuevo Reclamo
+        </a>
+    </div>
+
+    @if (Model.Count() > 0)
+    {
+        <table class="table table-hover table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Afiliado</th>
+                    <th>Observación Inicial</th>
+                    <th>Estado Actual</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    // LÓGICA DE VISTA: Calcular el estado actual
+                    // Buscamos el detalle con la fecha más reciente
+                    var ultimoDetalle = item.Detalles?
+                    .OrderByDescending(d => d.FechaEstado)
+                    .FirstOrDefault();
+
+                    var nombreEstado = ultimoDetalle?.Estado?.Descripcion ?? "Sin Iniciar";
+
+                    // Asignar color según el estado
+                    string claseColor = "bg-secondary";
+                    if (nombreEstado == "Pendiente") claseColor = "bg-danger";
+                    else if (nombreEstado == "En Proceso") claseColor = "bg-warning text-dark";
+                    else if (nombreEstado == "Resuelto") claseColor = "bg-success";
+
+                    <tr>
+                        <td>@item.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            @if (item.Afiliado != null)
+                            {
+                                <strong>@item.Afiliado.Apellido</strong>
+                    
+                                <span>, @item.Afiliado.Nombres</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Afiliado eliminado</span>
+                            }
+                        </td>
+                        <td>@item.Observacion</td>
+                        <td class="text-center">
+                            <span class="badge @claseColor rounded-pill">@nombreEstado</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary" title="Ver Historial">
+                                    <i class="bi bi-eye"></i> Historial
+                                </a>
+                                @if (User.IsInRole("Administrador"))
+                                {
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            No hay tickets registrados en el sistema.
+        </div>
+    }
+</div>
