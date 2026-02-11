@@ -1,0 +1,165 @@
+﻿@model GestionTickets_Lab4.ViewModels.AfiliadosViewModel
+
+@{
+    ViewData["Title"] = "Gestión de Afiliados";
+}
+
+<div class="container p-3">
+    <div class="row pt-4">
+        <div class="col-6">
+            <h2 class="text-primary">Lista de Afiliados</h2>
+        </div>
+        <div class="col-6 text-end">
+            @if (User.IsInRole("Administrador"))
+            {
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Nuevo Afiliado
+                </a>
+
+                <button type="button" class="btn btn-success ms-2" data-bs-toggle="modal" data-bs-target="#modalImportar">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Importar Excel
+                </button>
+            }
+        </div>
+    </div>
+
+    <form asp-action="Index" method="get" class="mb-3 p-3 bg-light border rounded">
+        <div class="row">
+            <div class="col-md-3">
+                <input type="text" name="buscarNombre" value="@Model.BuscarNombre" class="form-control" placeholder="Nombre..." />
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="buscarApellido" value="@Model.BuscarApellido" class="form-control" placeholder="Apellido..." />
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="buscarDNI" value="@Model.BuscarDNI" class="form-control" placeholder="DNI..." />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <br />
+
+    @if (Model.Afiliados.Count() > 0)
+    {
+        <table class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Foto</th>
+                    <th>Apellido</th>
+                    <th>Nombres</th>
+                    <th>DNI</th>
+                    <th>Fecha Nac.</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Afiliados)
+                {
+                    <tr>
+                        <td style="width: 100px; text-align: center;">
+                            @if (!string.IsNullOrEmpty(item.Foto))
+                            {
+                                <img src="@item.Foto" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin foto</span>
+                            }
+                        </td>
+                        <td width="20%">@item.Apellido</td>
+                        <td width="20%">@item.Nombres</td>
+                        <td width="15%">@item.DNI</td>
+                        <td width="15%">@item.FechaNacimiento.ToShortDateString()</td>
+                        <td>
+                            @if (User.IsInRole("Administrador"))
+                            {
+                                <div class="w-75 btn-group" role="group">
+                                    <a asp-controller="Afiliados" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary mx-1">Editar</a>
+                                    <a asp-controller="Afiliados" asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger mx-1">Borrar</a>
+                                </div>
+                            }
+                            else
+                            {
+                                <a asp-controller="Afiliados" asp-action="Details" asp-route-id="@item.Id" class="btn btn-info mx-1">Detalles</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <nav aria-label="Navegación de páginas">
+            <ul class="pagination justify-content-center">
+                @{
+                    var prevDisabled = Model.Paginador.PaginaActual == 1 ? "disabled" : "";
+                    var nextDisabled = Model.Paginador.PaginaActual == Model.Paginador.TotalPaginas ? "disabled" : "";
+
+                    // Mantener los filtros en los links de paginación
+                    var parms = new Dictionary<string, string>
+                        {
+                        { "buscarNombre", Model.BuscarNombre },
+                        { "buscarApellido", Model.BuscarApellido },
+                        { "buscarDNI", Model.BuscarDNI}
+                        };
+                }
+
+                <li class="page-item @prevDisabled">
+                    <a class="page-link" asp-action="Index"
+                       asp-all-route-data="parms"
+                       asp-route-pagina="@(Model.Paginador.PaginaActual - 1)">Anterior</a>
+                </li>
+
+                @for (int i = 1; i <= Model.Paginador.TotalPaginas; i++)
+                {
+                    <li class="page-item @(i == Model.Paginador.PaginaActual ? "active" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-all-route-data="parms"
+                           asp-route-pagina="@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @nextDisabled">
+                    <a class="page-link" asp-action="Index"
+                       asp-all-route-data="parms"
+                       asp-route-pagina="@(Model.Paginador.PaginaActual + 1)">Siguiente</a>
+                </li>
+            </ul>
+        </nav>
+    }
+    else
+    {
+        <p>No hay afiliados cargados.</p>
+    }
+</div>
+
+
+<div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Importar Afiliados desde Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="ImportarExcel" enctype="multipart/form-data" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Seleccione archivo (.xlsx)</label>
+                        <input type="file" name="archivoExcel" class="form-control" accept=".xlsx" required />
+                    </div>
+                    <div class="alert alert-info mt-2">
+                        El Excel debe tener: Nombres (A), Apellido (B), DNI (C), Fecha Nac (D).
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-success">Importar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
