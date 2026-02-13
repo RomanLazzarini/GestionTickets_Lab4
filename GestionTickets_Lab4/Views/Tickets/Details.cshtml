@@ -1,36 +1,98 @@
 ﻿@model GestionTickets_Lab4.Models.Ticket
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Historial del Reclamo";
 }
 
-<h1>Details</h1>
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Ticket #@Model.Id</h4>
+            <span class="badge bg-light text-dark">@Model.FechaSolicitud.ToString("dd/MM/yyyy")</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-muted">Afiliado</h5>
+                    <p class="fs-5">
+                        <i class="bi bi-person-circle"></i>
+                        @if (Model.Afiliado != null)
+                        {
+                            <span>@Model.Afiliado.Apellido, @Model.Afiliado.Nombres</span>
+                        }
+                        else
+                        {
 
-<div>
-    <h4>Ticket</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.FechaSolicitud)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.FechaSolicitud)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Observacion)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Observacion)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Afiliado)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Afiliado.Apellido)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+                            <span>Afiliado Eliminado</span>
+                        }
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-muted">Observación Inicial</h5>
+                    <p class="fs-5">@Model.Observacion</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="mb-3 text-secondary"><i class="bi bi-clock-history"></i> Historial de Movimientos</h4>
+
+    <div class="timeline mb-5">
+        @if (Model.Detalles != null && Model.Detalles.Any())
+        {
+            // Ordenamos para ver el más viejo arriba (inicio) y el más nuevo abajo
+            foreach (var detalle in Model.Detalles.OrderBy(d => d.FechaEstado))
+            {
+                string colorBorde = detalle.Estado.Descripcion == "Resuelto" ? "border-success" : "border-secondary";
+                string colorFondo = detalle.Estado.Descripcion == "Pendiente" ? "bg-light" : "bg-white";
+
+                <div class="card mb-3 @colorBorde @colorFondo shadow-sm" style="border-left: 5px solid;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                Estado: <strong>@detalle.Estado.Descripcion</strong>
+                            </h6>
+                            <small class="text-muted">@detalle.FechaEstado.ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                        <p class="card-text mt-2">@detalle.DescripcionPedido</p>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-warning">No hay detalles en este ticket.</div>
+        }
+    </div>
+
+    <div class="card border-primary">
+        <div class="card-header bg-light">
+            <strong>Actualizar Estado / Agregar Comentario</strong>
+        </div>
+        <div class="card-body">
+            <form asp-action="AgregarDetalle" method="post">
+                <input type="hidden" name="TicketId" value="@Model.Id" />
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Nuevo Estado</label>
+                        <select name="EstadoId" class="form-select" asp-items="ViewBag.ListaEstados"></select>
+                    </div>
+
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Observación / Respuesta</label>
+                        <textarea name="Observacion" class="form-control" rows="2" placeholder="Escriba la evolución del caso..." required></textarea>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a asp-action="Index" class="btn btn-secondary me-md-2">Volver</a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send"></i> Guardar Evolución
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <br /><br />
 </div>

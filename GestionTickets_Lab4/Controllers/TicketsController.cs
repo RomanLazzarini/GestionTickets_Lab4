@@ -34,18 +34,18 @@ namespace GestionTickets_Lab4.Controllers
         // GET: Tickets/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var ticket = await _context.Tickets
-                .Include(t => t.Afiliado)
+                .Include(t => t.Afiliado)       // Datos del afiliado
+                .Include(t => t.Detalles)       // Historial
+                .ThenInclude(d => d.Estado)     // Descripciones de estados
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+
+            if (ticket == null) return NotFound();
+
+            // --- NUEVO: Cargar la lista de estados para el formulario de evolución ---
+            ViewData["ListaEstados"] = new SelectList(_context.Estados, "Id", "Descripcion");
 
             return View(ticket);
         }
@@ -201,6 +201,34 @@ namespace GestionTickets_Lab4.Controllers
         private bool TicketExists(int id)
         {
             return _context.Tickets.Any(e => e.Id == id);
+        }
+
+        // POST: Tickets/AgregarDetalle
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AgregarDetalle(int TicketId, int EstadoId, string Observacion)
+        {
+            // Validamos que venga algo de texto
+            if (string.IsNullOrEmpty(Observacion))
+            {
+                // Si está vacío, recargamos la página sin hacer nada
+                return RedirectToAction("Details", new { id = TicketId });
+            }
+
+            // Creamos el nuevo movimiento en el historial
+            var nuevoDetalle = new TicketDetalle
+            {
+                TicketId = TicketId,
+                EstadoId = EstadoId,
+                FechaEstado = DateTime.Now,
+                DescripcionPedido = Observacion
+            };
+
+            _context.Add(nuevoDetalle);
+            await _context.SaveChangesAsync();
+
+            // Redirigimos a la misma página de detalles para ver el nuevo comentario agregado
+            return RedirectToAction("Details", new { id = TicketId });
         }
     }
 }
