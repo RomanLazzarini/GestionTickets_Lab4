@@ -51,9 +51,21 @@ namespace GestionTickets_Lab4.Controllers
         }
 
         // GET: Tickets/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["AfiliadoId"] = new SelectList(_context.Afiliados, "Id", "Apellido");
+            // PROYECCIÓN DE DATOS:
+            // Se crea una lista con una nueva propiedad "NombreCompleto"
+            var listaAfiliados = await _context.Afiliados
+                .Select(a => new {
+                    Id = a.Id,
+                    NombreCompleto = a.Apellido + ", " + a.Nombres + " (DNI: " + a.DNI + ")"
+                })
+                .OrderBy(a => a.NombreCompleto)
+                .ToListAsync();
+
+            // Ahora le decimos al SelectList que use "NombreCompleto" como valores a mostrar
+            ViewData["AfiliadoId"] = new SelectList(listaAfiliados, "Id", "NombreCompleto");
+
             return View();
         }
 
@@ -74,15 +86,11 @@ namespace GestionTickets_Lab4.Controllers
 
             if (ModelState.IsValid)
             {
-                // -----------------------------------------------------------
                 // PASO 1: Guardar la Cabecera (El Ticket en sí)
-                // -----------------------------------------------------------
                 _context.Add(ticket);
                 await _context.SaveChangesAsync(); // Aquí SQL Server genera el ID del Ticket
 
-                // -----------------------------------------------------------
                 // PASO 2: Generar el Detalle Automático (Estado "Pendiente")
-                // -----------------------------------------------------------
 
                 // Buscamos el ID del estado "Pendiente" en la base de datos
                 var estadoPendiente = await _context.Estados
@@ -106,8 +114,18 @@ namespace GestionTickets_Lab4.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Si algo falló, recargamos el combo de Afiliados
-            ViewData["AfiliadoId"] = new SelectList(_context.Afiliados, "Id", "Apellido", ticket.AfiliadoId);
+            // Si algo falló, recargamos la lista CONCATENADA (Nombre + Apellido + DNI)
+            // para que el desplegable no se vea feo al recargar la página.
+            var listaAfiliados = await _context.Afiliados
+                .Select(a => new {
+                    Id = a.Id,
+                    NombreCompleto = a.Apellido + ", " + a.Nombres + " (DNI: " + a.DNI + ")"
+                })
+                .OrderBy(a => a.NombreCompleto)
+                .ToListAsync();
+
+            ViewData["AfiliadoId"] = new SelectList(listaAfiliados, "Id", "NombreCompleto", ticket.AfiliadoId);
+
             return View(ticket);
         }
 
