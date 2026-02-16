@@ -1,0 +1,93 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Registro de Usuario";
+}
+
+<style>
+    .register-bg {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        /* Calculamos altura menos header/footer para evitar scroll innecesario */
+        min-height: calc(100vh - 140px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+
+    .register-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        background-color: rgba(255, 255, 255, 0.95);
+        overflow: hidden;
+    }
+
+    .register-header {
+        background-color: #198754; /* Verde (Success) para diferenciarlo del Login (Azul) */
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+</style>
+
+<div class="register-bg">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+
+                <div class="card register-card animate__animated animate__fadeInDown">
+                    <div class="register-header">
+                        <h3 class="mb-0 fw-bold"><i class="bi bi-person-plus-fill"></i> Únete</h3>
+                        <small>Crear Nueva Cuenta</small>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3 text-center small"></div>
+
+                            <div class="form-floating mb-3">
+                                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                                <label asp-for="Input.Email"><i class="bi bi-envelope"></i> Correo Electrónico</label>
+                                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                                <label asp-for="Input.Password"><i class="bi bi-lock"></i> Contraseña</label>
+                                <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                                <label asp-for="Input.ConfirmPassword"><i class="bi bi-check2-circle"></i> Confirmar Contraseña</label>
+                                <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+                            </div>
+
+                            <div class="d-grid gap-2 mt-4">
+                                <button id="registerSubmit" type="submit" class="btn btn-success btn-lg fw-bold shadow-sm">
+                                    CREAR CUENTA
+                                </button>
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <span class="text-muted small">¿Ya tienes usuario?</span><br />
+                                <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none fw-bold text-primary">Iniciar Sesión</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="text-center mt-3 text-muted small">
+                    &copy; 2026 - Clínica UTN Salud
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
