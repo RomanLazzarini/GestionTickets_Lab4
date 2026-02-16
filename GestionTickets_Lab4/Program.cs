@@ -5,17 +5,17 @@ using GestionTickets_Lab4.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. CONFIGURACIÓN DE BASE DE DATOS
+// 1. CONFIGURACIï¿½N DE BASE DE DATOS
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// 2. CONFIGURACIÓN DE IDENTITY (USUARIOS Y ROLES)
+// 2. CONFIGURACIï¿½N DE IDENTITY (USUARIOS Y ROLES)
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
-    // A. Reglas de Password relajadas para el examen (Más rápido de escribir)
+    // A. Reglas de Password relajadas para el examen (Mï¿½s rï¿½pido de escribir)
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
@@ -23,7 +23,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequiredLength = 3; // Con poner "123" alcanza
 })
-.AddRoles<IdentityRole>() // <--- ¡CLAVE! Agregamos soporte para Roles (Admin/Afiliado)
+.AddRoles<IdentityRole>() // <--- ï¿½CLAVE! Agregamos soporte para Roles (Admin/Afiliado)
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllersWithViews();
@@ -52,7 +52,7 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 // ==============================================================================
-// 4. ZONA DE "SEEDING" (CARGA AUTOMÁTICA DE DATOS) - Adaptado de tu compañero
+// 4. ZONA DE "SEEDING" (CARGA AUTOMï¿½TICA DE DATOS) - Adaptado de tu compaï¿½ero
 // ==============================================================================
 // Esto se ejecuta cada vez que inicias la app. Si los usuarios no existen, los crea.
 using (var scope = app.Services.CreateScope())
@@ -77,7 +77,7 @@ using (var scope = app.Services.CreateScope())
 
         // B. Crear Usuario Admin (Si no existe)
         var adminEmail = "admin@tickets.com";
-        var adminPass = "123"; // Contraseña fácil para testear
+        var adminPass = "123"; // Contraseï¿½a fï¿½cil para testear
 
         if (await userManager.FindByEmailAsync(adminEmail) == null)
         {
@@ -105,7 +105,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Ocurrió un error al sembrar la base de datos.");
+        logger.LogError(ex, "Ocurriï¿½ un error al sembrar la base de datos.");
     }
 }
 // ==============================================================================

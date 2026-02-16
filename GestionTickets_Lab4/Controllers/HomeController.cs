@@ -15,6 +15,13 @@ namespace GestionTickets_Lab4.Controllers
 
         public IActionResult Index()
         {
+            // SI EL USUARIO NO ESTÁ LOGUEADO -> AL LOGIN DIRECTAMENTE
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Redirect("/Identity/Account/Login");
+            }
+
+            // SI SÍ ESTÁ LOGUEADO -> MUESTRA EL DASHBOARD (TU MENÚ DE BOTONES)
             return View();
         }
 

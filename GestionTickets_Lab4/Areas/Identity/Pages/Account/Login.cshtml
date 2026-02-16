@@ -1,0 +1,90 @@
+﻿@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Ingreso al Sistema";
+}
+
+<style>
+    /* Fondo con degradado suave */
+    .login-bg {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        /* Calculamos el 100% de la pantalla MENOS la barra de navegación y el footer (aprox 140px) */
+        min-height: calc(100vh - 140px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+
+    .login-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        background-color: rgba(255, 255, 255, 0.95);
+        overflow: hidden;
+        /* Aseguramos que la tarjeta no sea gigante en pantallas chicas */
+        max-width: 100%;
+    }
+
+    .login-header {
+        background-color: #0d6efd;
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+</style>
+
+<div class="login-bg">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+
+                <div class="card login-card animate__animated animate__fadeInDown">
+                    <div class="login-header">
+                        <h2 class="mb-0 fw-bold"><i class="bi bi-hospital"></i> UTN Salud</h2>
+                        <small>Acceso al Sistema</small>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form id="account" method="post">
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3 text-center small"></div>
+
+                            <div class="form-floating mb-3">
+                                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                                <label asp-for="Input.Email">Correo Electrónico</label>
+                                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Password" />
+                                <label asp-for="Input.Password">Contraseña</label>
+                                <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <label asp-for="Input.RememberMe" class="form-check-label text-muted small">
+                                    <input class="form-check-input" asp-for="Input.RememberMe" />
+                                    Recordar mis datos
+                                </label>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button id="login-submit" type="submit" class="btn btn-primary btn-lg fw-bold">INGRESAR</button>
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <a id="forgot-password" asp-page="./ForgotPassword" class="text-decoration-none small text-muted">¿Olvidó su contraseña?</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
