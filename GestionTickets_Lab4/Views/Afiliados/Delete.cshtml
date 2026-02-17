@@ -1,51 +1,70 @@
 ﻿@model GestionTickets_Lab4.Models.Afiliado
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Eliminar Afiliado";
 }
 
-<h1>Delete</h1>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
 
-<h3>Are you sure you want to delete this?</h3>
-<div>
-    <h4>Afiliado</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Apellido)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Apellido)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Nombres)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Nombres)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.DNI)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.DNI)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.FechaNacimiento)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.FechaNacimiento)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Foto)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Foto)
-        </dd>
-    </dl>
-    
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
-    </form>
+            <div class="card shadow border-0">
+                <div class="card-header bg-danger text-white text-center py-3">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-person-x-fill"></i> Eliminar Afiliado</h4>
+                </div>
+
+                <div class="card-body p-4 text-center">
+
+                    <h5 class="card-title text-danger fw-bold mb-3">¿Está seguro de eliminar a este afiliado?</h5>
+                    <p class="text-muted mb-4">
+                        Esta acción es irreversible y podría afectar el historial de tickets asociados.
+                    </p>
+
+                    <div class="bg-light rounded-3 p-4 mb-4 border position-relative">
+
+                        <div class="mb-3">
+                            @if (!string.IsNullOrEmpty(Model.Foto))
+                            {
+                                <img src="@Model.Foto" alt="Foto Perfil" class="rounded-circle shadow-sm border border-3 border-white"
+                                     style="width: 120px; height: 120px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="d-inline-block rounded-circle bg-white shadow-sm border p-3">
+                                    <i class="bi bi-person text-secondary opacity-50" style="font-size: 4rem;"></i>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="position-relative">
+                            <h3 class="fw-bold text-dark mb-1">
+                                @Html.DisplayFor(model => model.Apellido), @Html.DisplayFor(model => model.Nombres)
+                            </h3>
+                            <div class="d-flex justify-content-center gap-3 mt-2">
+                                <span class="badge bg-secondary">DNI: @Html.DisplayFor(model => model.DNI)</span>
+                                <span class="badge bg-info text-dark">
+                                    <i class="bi bi-cake2-fill me-1"></i> @Model.FechaNacimiento.ToString("dd/MM/yyyy")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form asp-action="Delete">
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg shadow-sm">
+                                <i class="bi bi-trash-fill"></i> Confirmar Eliminación
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
 </div>

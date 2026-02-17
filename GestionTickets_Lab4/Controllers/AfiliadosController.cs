@@ -4,7 +4,7 @@ using GestionTickets_Lab4.Data;
 using GestionTickets_Lab4.Models;
 using GestionTickets_Lab4.ViewModels;
 using Microsoft.AspNetCore.Authorization;
-using SpreadsheetLight; // Usamos la librería que instalamos
+using SpreadsheetLight;
 
 namespace GestionTickets_Lab4.Controllers
 {
@@ -21,7 +21,6 @@ namespace GestionTickets_Lab4.Controllers
         }
 
         // GET: Afiliados (Con Búsqueda y Paginación)
-        // GET: Afiliados (Con Búsqueda y Paginación)
         public async Task<IActionResult> Index(string buscarNombre, string buscarApellido, string buscarDNI, int pagina = 1)
         {
             var consulta = _context.Afiliados.AsQueryable();
@@ -37,7 +36,7 @@ namespace GestionTickets_Lab4.Controllers
                 consulta = consulta.Where(x => x.Apellido.Contains(buscarApellido));
             }
 
-            // --- NUEVO FILTRO DNI ---
+            // --- FILTRO DNI ---
             if (!string.IsNullOrEmpty(buscarDNI))
             {
                 consulta = consulta.Where(x => x.DNI.Contains(buscarDNI));
@@ -146,41 +145,51 @@ namespace GestionTickets_Lab4.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Administrador")]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombres,Apellido,DNI,FechaNacimiento,Foto")] Afiliado afiliado)
+        [RequestSizeLimit(104857600)] // Aumentamos el límite a 100 MB (100 * 1024 * 1024 bytes)
+        // 1. Se agrega "IFormFile archivoFoto" para recibir la imagen limpiamente
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombres,Apellido,DNI,FechaNacimiento,Foto")] Afiliado afiliado, IFormFile? archivoFoto)
         {
             if (id != afiliado.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
-                // Manejo de nueva foto
-                var archivos = HttpContext.Request.Form.Files;
-                if (archivos != null && archivos.Count > 0)
+                // 2. Verificamos si subieron una NUEVA foto
+                if (archivoFoto != null && archivoFoto.Length > 0)
                 {
-                    var archivoFoto = archivos[0];
-                    if (archivoFoto.Length > 0)
+                    // A. Definir rutas
+                    string wwwRootPath = _env.WebRootPath;
+                    string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(archivoFoto.FileName);
+                    string rutaFinal = Path.Combine(wwwRootPath, "imagenes", nombreArchivo);
+
+                    // B. Guardar la nueva foto
+                    using (var fileStream = new FileStream(rutaFinal, FileMode.Create))
                     {
-                        var pathDestino = Path.Combine(_env.WebRootPath, "imagenes");
-                        var archivoDestino = Guid.NewGuid().ToString() + Path.GetExtension(archivoFoto.FileName);
+                        await archivoFoto.CopyToAsync(fileStream);
+                    }
 
-                        using (var fileStream = new FileStream(Path.Combine(pathDestino, archivoDestino), FileMode.Create))
+                    // C. Borrar la foto VIEJA (Si existe y es diferente a la nueva)
+                    // Usamos try-catch para que si falla el borrado, NO se detenga el programa
+                    if (!string.IsNullOrEmpty(afiliado.Foto))
+                    {
+                        try
                         {
-                            await archivoFoto.CopyToAsync(fileStream);
+                            string fotoViejaNombre = afiliado.Foto.Replace("/imagenes/", "");
+                            string rutaVieja = Path.Combine(wwwRootPath, "imagenes", fotoViejaNombre);
 
-                            // Borrar foto vieja si existe
-                            if (!string.IsNullOrEmpty(afiliado.Foto))
+                            if (System.IO.File.Exists(rutaVieja))
                             {
-                                // Ojo: afiliado.Foto tiene "/imagenes/foto.jpg", hay que limpiarlo para obtener ruta fisica
-                                string fotoVieja = afiliado.Foto.Replace("/imagenes/", "");
-                                string pathViejo = Path.Combine(pathDestino, fotoVieja);
-                                if (System.IO.File.Exists(pathViejo))
-                                {
-                                    System.IO.File.Delete(pathViejo);
-                                }
+                                System.IO.File.Delete(rutaVieja);
                             }
-
-                            afiliado.Foto = "/imagenes/" + archivoDestino;
+                        }
+                        catch (Exception)
+                        {
+                            // Si no se puede borrar la vieja (por permisos o uso), 
+                            // simplemente lo ignoramos y seguimos. Lo importante es guardar la nueva.
                         }
                     }
+
+                    // D. Actualizamos el modelo con la ruta de la nueva foto
+                    afiliado.Foto = "/imagenes/" + nombreArchivo;
                 }
 
                 try
