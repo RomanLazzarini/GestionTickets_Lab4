@@ -40,21 +40,49 @@
     <div class="timeline mb-5">
         @if (Model.Detalles != null && Model.Detalles.Any())
         {
-            // Ordenamos para ver el más viejo arriba (inicio) y el más nuevo abajo
+            // Ordenamiento cronológico
             foreach (var detalle in Model.Detalles.OrderBy(d => d.FechaEstado))
             {
-                string colorBorde = detalle.Estado.Descripcion == "Resuelto" ? "border-success" : "border-secondary";
-                string colorFondo = detalle.Estado.Descripcion == "Pendiente" ? "bg-light" : "bg-white";
+                // 1. LÓGICA DE COLORES E ICONOS ADAPTADA A LOS DATOS
+                string bordeColor = "border-secondary";
+                string icono = "bi-circle";
+                string textoColor = "text-secondary";
 
-                <div class="card mb-3 @colorBorde @colorFondo shadow-sm" style="border-left: 5px solid;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <h6 class="card-subtitle mb-2 text-muted">
-                                Estado: <strong>@detalle.Estado.Descripcion</strong>
+                if (detalle.Estado.Descripcion == "Pendiente")
+                {
+                    bordeColor = "border-danger";       // Rojo
+                    textoColor = "text-danger";
+                    icono = "bi-exclamation-circle";
+                }
+                else if (detalle.Estado.Descripcion == "En Proceso")
+                {
+                    bordeColor = "border-warning";      // Amarillo
+                    textoColor = "text-warning";
+                    icono = "bi-hourglass-split";
+                }
+                else if (detalle.Estado.Descripcion == "Resuelto")
+                {
+                    bordeColor = "border-success";      // Verde
+                    textoColor = "text-success";
+                    icono = "bi-check-circle-fill";
+                }
+
+                // 2. LA TARJETA VISUAL
+                <div class="card mb-3 shadow-sm @bordeColor" style="border-left: 5px solid; border-radius: 5px;">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <h6 class="mb-1 fw-bold">
+                                Estado: <span class="@textoColor">@detalle.Estado.Descripcion</span>
                             </h6>
+
                             <small class="text-muted">@detalle.FechaEstado.ToString("dd/MM/yyyy HH:mm")</small>
                         </div>
-                        <p class="card-text mt-2">@detalle.DescripcionPedido</p>
+
+                        <p class="mb-0 text-secondary small mt-2">
+                            <i class="bi @icono me-1"></i>
+                            @detalle.DescripcionPedido
+                        </p>
                     </div>
                 </div>
             }
