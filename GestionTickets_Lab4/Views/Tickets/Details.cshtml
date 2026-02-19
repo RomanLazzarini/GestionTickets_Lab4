@@ -5,37 +5,69 @@
 }
 
 <div class="container mt-4">
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">Ticket #@Model.Id</h4>
-            <span class="badge bg-light text-dark">@Model.FechaSolicitud.ToString("dd/MM/yyyy")</span>
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+            <h4 class="mb-0 fw-bold"><i class="bi bi-ticket-detailed"></i> Ticket #@Model.Id</h4>
+            <span class="badge bg-light text-dark border fs-6">
+                <i class="bi bi-calendar-event"></i> @Model.FechaSolicitud.ToString("dd/MM/yyyy")
+            </span>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="text-muted">Afiliado</h5>
-                    <p class="fs-5">
-                        <i class="bi bi-person-circle"></i>
-                        @if (Model.Afiliado != null)
-                        {
-                            <span>@Model.Afiliado.Apellido, @Model.Afiliado.Nombres</span>
-                        }
-                        else
-                        {
+        <div class="card-body p-4">
+            <div class="row g-4">
 
-                            <span>Afiliado Eliminado</span>
-                        }
-                    </p>
-                </div>
                 <div class="col-md-6">
-                    <h5 class="text-muted">Observación Inicial</h5>
-                    <p class="fs-5">@Model.Observacion</p>
+                    <h6 class="text-muted text-uppercase small ls-1 mb-2">Datos del Afiliado</h6>
+
+                    @if (Model.Afiliado != null)
+                    {
+                        <div class="d-flex align-items-center p-3 bg-light rounded border border-secondary border-opacity-25 shadow-sm h-100">
+                            <div class="me-3">
+                                @if (!string.IsNullOrEmpty(Model.Afiliado.Foto))
+                                {
+                                    <img src="@Model.Afiliado.Foto" alt="Foto de @Model.Afiliado.Apellido"
+                                         class="rounded-circle border border-2 border-primary shadow-sm"
+                                         style="width: 70px; height: 70px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="bg-white shadow-sm rounded-circle d-flex justify-content-center align-items-center border border-2 border-secondary" style="width: 70px; height: 70px;">
+                                        <i class="bi bi-person text-secondary fs-1"></i>
+                                    </div>
+                                }
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-bold text-dark">@Model.Afiliado.Apellido, @Model.Afiliado.Nombres</h5>
+                                <span class="badge bg-secondary"><i class="bi bi-person-vcard"></i> DNI: @Model.Afiliado.DNI</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center p-3 bg-light rounded border border-danger border-opacity-25 h-100">
+                            <i class="bi bi-person-x-fill text-danger fs-1 me-3 opacity-50"></i>
+                            <div>
+                                <h5 class="mb-0 fw-bold text-muted">Afiliado Eliminado</h5>
+                                <small class="text-muted">El usuario original fue removido del sistema.</small>
+                            </div>
+                        </div>
+                    }
                 </div>
+
+                <div class="col-md-6">
+                    <h6 class="text-muted text-uppercase small ls-1 mb-2">Observación Inicial</h6>
+                    <div class="p-3 bg-light rounded border border-secondary border-opacity-25 h-100 fst-italic text-secondary">
+                        <i class="bi bi-chat-quote-fill me-2 opacity-50 fs-5"></i>
+                        "@Model.Observacion"
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <h4 class="mb-3 text-secondary"><i class="bi bi-clock-history"></i> Historial de Movimientos</h4>
+    <h5 class="mb-3 text-secondary fw-bold border-bottom pb-2">
+        <i class="bi bi-clock-history"></i> Historial de Movimientos
+    </h5>
 
     <div class="timeline mb-5">
         @if (Model.Detalles != null && Model.Detalles.Any())
@@ -43,7 +75,7 @@
             // Ordenamiento cronológico
             foreach (var detalle in Model.Detalles.OrderBy(d => d.FechaEstado))
             {
-                // 1. LÓGICA DE COLORES E ICONOS ADAPTADA A LOS DATOS
+                // LÓGICA DE COLORES E ICONOS
                 string bordeColor = "border-secondary";
                 string icono = "bi-circle";
                 string textoColor = "text-secondary";
@@ -67,20 +99,17 @@
                     icono = "bi-check-circle-fill";
                 }
 
-                // 2. LA TARJETA VISUAL
-                <div class="card mb-3 shadow-sm @bordeColor" style="border-left: 5px solid; border-radius: 5px;">
+                // LA TARJETA VISUAL
+                <div class="card mb-3 shadow-sm @bordeColor bg-white" style="border-left: 5px solid; border-radius: 5px;">
                     <div class="card-body py-2">
                         <div class="d-flex justify-content-between align-items-center">
-
                             <h6 class="mb-1 fw-bold">
                                 Estado: <span class="@textoColor">@detalle.Estado.Descripcion</span>
                             </h6>
-
-                            <small class="text-muted">@detalle.FechaEstado.ToString("dd/MM/yyyy HH:mm")</small>
+                            <small class="text-muted"><i class="bi bi-calendar-check me-1"></i> @detalle.FechaEstado.ToString("dd/MM/yyyy HH:mm")</small>
                         </div>
-
-                        <p class="mb-0 text-secondary small mt-2">
-                            <i class="bi @icono me-1"></i>
+                        <p class="mb-0 text-dark small mt-2 bg-light p-2 rounded border border-opacity-10">
+                            <i class="bi @icono me-1 @textoColor"></i>
                             @detalle.DescripcionPedido
                         </p>
                     </div>
@@ -89,38 +118,41 @@
         }
         else
         {
-            <div class="alert alert-warning">No hay detalles en este ticket.</div>
+            <div class="alert alert-warning shadow-sm border-warning">
+                <i class="bi bi-info-circle-fill me-2"></i> No hay detalles ni movimientos registrados en este ticket todavía.
+            </div>
         }
     </div>
 
-    <div class="card border-primary">
-        <div class="card-header bg-light">
-            <strong>Actualizar Estado / Agregar Comentario</strong>
+    <div class="card border-primary shadow-sm mb-5">
+        <div class="card-header bg-primary bg-opacity-10 border-primary text-primary fw-bold">
+            <i class="bi bi-plus-circle me-1"></i> Actualizar Estado / Agregar Comentario
         </div>
         <div class="card-body">
             <form asp-action="AgregarDetalle" method="post">
                 <input type="hidden" name="TicketId" value="@Model.Id" />
 
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Nuevo Estado</label>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Nuevo Estado</label>
                         <select name="EstadoId" class="form-select" asp-items="ViewBag.ListaEstados"></select>
                     </div>
 
-                    <div class="col-md-8 mb-3">
-                        <label class="form-label">Observación / Respuesta</label>
+                    <div class="col-md-8">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Observación / Respuesta</label>
                         <textarea name="Observacion" class="form-control" rows="2" placeholder="Escriba la evolución del caso..." required></textarea>
                     </div>
                 </div>
 
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a asp-action="Index" class="btn btn-secondary me-md-2">Volver</a>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-send"></i> Guardar Evolución
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver a Tickets
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-send-fill"></i> Guardar Evolución
                     </button>
                 </div>
             </form>
         </div>
     </div>
-    <br /><br />
 </div>

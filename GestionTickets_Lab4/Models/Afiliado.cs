@@ -24,7 +24,7 @@ namespace GestionTickets_Lab4.Models
         public DateTime FechaNacimiento { get; set; }
 
         [Display(Name = "Foto de Perfil")]
-        public string? Foto { get; set; } // Guardaremos la ruta (path) del archivo
+        public string? Foto { get; set; } // Guardar la ruta (path) del archivo
 
         // Relación: Un afiliado puede tener muchos tickets
         public ICollection<Ticket>? Tickets { get; set; }
