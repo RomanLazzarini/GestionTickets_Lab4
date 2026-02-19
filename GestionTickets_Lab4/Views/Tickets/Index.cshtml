@@ -1,86 +1,157 @@
-﻿@model IEnumerable<GestionTickets_Lab4.Models.Ticket>
+﻿@model GestionTickets_Lab4.ViewModels.TicketsViewModel
 
 @{
     ViewData["Title"] = "Gestión de Tickets";
 }
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="text-primary">Tickets Registrados</h2>
-        <a asp-action="Create" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> Nuevo Reclamo
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary fw-bold"><i class="bi bi-ticket-detailed"></i> Tickets Registrados</h2>
+
+        @if (User.Identity.IsAuthenticated)
+        {
+            <a asp-action="Create" class="btn btn-success shadow-sm px-4">
+                <i class="bi bi-plus-lg"></i> Nuevo Reclamo
+            </a>
+        }
     </div>
 
-    @if (Model.Count() > 0)
+    <div class="card shadow-sm border-0 bg-light mb-4">
+        <div class="card-body py-3">
+            <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Buscar por Afiliado</label>
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" name="buscarAfiliado" class="form-control border-start-0"
+                               placeholder="Nombre o Apellido..." value="@Model.BuscarAfiliado" />
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Estado del Ticket</label>
+                    <select name="filtroEstado" class="form-select shadow-sm" asp-items="@ViewBag.OpcionesEstado">
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                        <i class="bi bi-funnel-fill"></i> Aplicar Filtros
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Tickets != null && Model.Tickets.Any())
     {
-        <table class="table table-hover table-bordered shadow-sm">
-            <thead class="table-dark">
-                <tr>
-                    <th>Fecha</th>
-                    <th>Afiliado</th>
-                    <th>Observación Inicial</th>
-                    <th>Estado Actual</th>
-                    <th class="text-center">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    // LÓGICA DE VISTA: Calcular el estado actual
-                    // Buscamos el detalle con la fecha más reciente
-                    var ultimoDetalle = item.Detalles?
-                    .OrderByDescending(d => d.FechaEstado)
-                    .FirstOrDefault();
-
-                    var nombreEstado = ultimoDetalle?.Estado?.Descripcion ?? "Sin Iniciar";
-
-                    // Asignar color según el estado
-                    string claseColor = "bg-secondary";
-                    if (nombreEstado == "Pendiente") claseColor = "bg-danger";
-                    else if (nombreEstado == "En Proceso") claseColor = "bg-warning text-dark";
-                    else if (nombreEstado == "Resuelto") claseColor = "bg-success";
-
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover table-bordered mb-0 bg-white">
+                <thead class="table-dark">
                     <tr>
-                        <td>@item.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>
-                            @if (item.Afiliado != null)
-                            {
-                                <strong>@item.Afiliado.Apellido</strong>
-                    
-                                <span>, @item.Afiliado.Nombres</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">Afiliado eliminado</span>
-                            }
-                        </td>
-                        <td>@item.Observacion</td>
-                        <td class="text-center">
-                            <span class="badge @claseColor rounded-pill">@nombreEstado</span>
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary" title="Ver Historial">
-                                    <i class="bi bi-eye"></i> Historial
-                                </a>
-                                @if (User.IsInRole("Administrador"))
-                                {
-                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger" title="Eliminar">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
-                                }
-                            </div>
-                        </td>
+                        <th>Fecha</th>
+                        <th>Afiliado</th>
+                        <th>Observación Inicial</th>
+                        <th class="text-center">Estado Actual</th>
+                        <th class="text-center">Acciones</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="align-middle">
+                    @foreach (var item in Model.Tickets)
+                    {
+                        // LÓGICA DE VISTA: Calcular el estado actual
+                        var ultimoDetalle = item.Detalles?
+                        .OrderByDescending(d => d.FechaEstado)
+                        .FirstOrDefault();
+
+                        var nombreEstado = ultimoDetalle?.Estado?.Descripcion ?? "Sin Iniciar";
+
+                        // Asignar color según el estado
+                        string claseColor = "bg-secondary";
+                        if (nombreEstado == "Pendiente") claseColor = "bg-danger";
+                        else if (nombreEstado == "En Proceso") claseColor = "bg-warning text-dark";
+                        else if (nombreEstado == "Resuelto") claseColor = "bg-success";
+
+                        <tr>
+                            <td class="text-muted"><i class="bi bi-calendar2-day me-1"></i> @item.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (item.Afiliado != null)
+                                {
+                                    <strong>@item.Afiliado.Apellido</strong>
+                        
+                                    <span>, @item.Afiliado.Nombres</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger small"><i class="bi bi-person-x"></i> Afiliado eliminado</span>
+                                }
+                            </td>
+                            <td class="fst-italic text-secondary">@item.Observacion</td>
+                            <td class="text-center">
+                                <span class="badge @claseColor rounded-pill px-3 py-2">@nombreEstado</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm shadow-sm">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary" title="Ver Historial">
+                                        <i class="bi bi-eye-fill"></i> Detalle
+                                    </a>
+
+                                    @if (User.Identity.IsAuthenticated && User.IsInRole("Administrador"))
+                                    {
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger" title="Eliminar">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Paginador.TotalPaginas > 1)
+        {
+            <nav aria-label="Navegación de páginas" class="mt-4">
+                <ul class="pagination justify-content-center">
+
+                    <li class="page-item @(Model.Paginador.PaginaActual == 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-pagina="@(Model.Paginador.PaginaActual - 1)"
+                           asp-route-buscarAfiliado="@Model.BuscarAfiliado"
+                           asp-route-filtroEstado="@Model.FiltroEstado">
+                            <i class="bi bi-chevron-left"></i> Anterior
+                        </a>
+                    </li>
+
+                    @for (int i = 1; i <= Model.Paginador.TotalPaginas; i++)
+                    {
+                        <li class="page-item @(i == Model.Paginador.PaginaActual ? "active" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-pagina="@i"
+                               asp-route-buscarAfiliado="@Model.BuscarAfiliado"
+                               asp-route-filtroEstado="@Model.FiltroEstado">@i</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.Paginador.PaginaActual == Model.Paginador.TotalPaginas ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-pagina="@(Model.Paginador.PaginaActual + 1)"
+                           asp-route-buscarAfiliado="@Model.BuscarAfiliado"
+                           asp-route-filtroEstado="@Model.FiltroEstado">
+                            Siguiente <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
     }
     else
     {
-        <div class="alert alert-info text-center">
-            No hay tickets registrados en el sistema.
+        <div class="alert alert-info shadow-sm mt-4 text-center border-info p-5">
+            <i class="bi bi-inbox-fill text-info opacity-50 mb-3 d-block" style="font-size: 4rem;"></i>
+            <h5 class="fw-bold">No se encontraron tickets</h5>
+            <p class="mb-0 text-muted">Intente cambiar los filtros de búsqueda o registre un nuevo reclamo.</p>
         </div>
     }
 </div>

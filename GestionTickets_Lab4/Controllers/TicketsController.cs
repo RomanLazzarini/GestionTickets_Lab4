@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization; // 👈 NUEVO: Para la seguridad
 using GestionTickets_Lab4.Data;
 using GestionTickets_Lab4.Models;
+using GestionTickets_Lab4.ViewModels; // 👈 NUEVO: Para el paginador y filtros
 
 namespace GestionTickets_Lab4.Controllers
 {
@@ -19,42 +21,111 @@ namespace GestionTickets_Lab4.Controllers
             _context = context;
         }
 
-        // GET: Tickets
-        public async Task<IActionResult> Index()
+        // GET: Tickets (PÚBLICO: Cualquier usuario puede ver el listado)
+        public async Task<IActionResult> Index(string buscarAfiliado, string filtroEstado, int pagina = 1)
         {
-            var applicationDbContext = _context.Tickets
-                .Include(t => t.Afiliado)       // Traemos datos del Afiliado
-                .Include(t => t.Detalles)       // Traemos el historial de detalles
-                .ThenInclude(d => d.Estado)     // Traemos la descripción del estado (Pendiente, etc)
-                .OrderByDescending(t => t.FechaSolicitud); // Ordenamos: los más nuevos primero
+            // 1. COMPORTAMIENTO POR DEFECTO: Si no hay filtro, mostrar Pendientes y En Proceso
+            if (string.IsNullOrEmpty(filtroEstado))
+            {
+                filtroEstado = "Activos";
+            }
 
-            return View(await applicationDbContext.ToListAsync());
+            var consulta = _context.Tickets
+                .Include(t => t.Afiliado)
+                .Include(t => t.Detalles!)
+                .ThenInclude(d => d.Estado)
+                .AsQueryable();
+
+            // 2. FILTRO POR TEXTO (Afiliado)
+            if (!string.IsNullOrEmpty(buscarAfiliado))
+            {
+                consulta = consulta.Where(t =>
+                    t.Afiliado!.Apellido.Contains(buscarAfiliado) ||
+                    t.Afiliado!.Nombres.Contains(buscarAfiliado));
+            }
+
+            // 3. FILTRO POR ESTADO (Verificando el último detalle registrado)
+            if (filtroEstado == "Activos")
+            {
+                // Muestra solo si el último estado es Pendiente o En Proceso
+                consulta = consulta.Where(t =>
+                    t.Detalles!.OrderByDescending(d => d.FechaEstado).FirstOrDefault()!.Estado!.Descripcion == "Pendiente" ||
+                    t.Detalles!.OrderByDescending(d => d.FechaEstado).FirstOrDefault()!.Estado!.Descripcion == "En Proceso");
+            }
+            else if (filtroEstado == "Resueltos")
+            {
+                // Muestra solo si el último estado es Resuelto
+                consulta = consulta.Where(t =>
+                    t.Detalles!.OrderByDescending(d => d.FechaEstado).FirstOrDefault()!.Estado!.Descripcion == "Resuelto");
+            }
+            // Si el filtro es "Todos", no aplicamos la restricción Where.
+
+            // Ordenamos: los más nuevos primero
+            consulta = consulta.OrderByDescending(t => t.FechaSolicitud);
+
+            // 4. PAGINACIÓN
+            int registrosPorPagina = 5;
+            int totalRegistros = await consulta.CountAsync();
+
+            var registros = await consulta
+                .Skip((pagina - 1) * registrosPorPagina)
+                .Take(registrosPorPagina)
+                .ToListAsync();
+
+            // 5. ARMAR EL VIEWMODEL
+            var modelo = new TicketsViewModel()
+            {
+                Tickets = registros,
+                BuscarAfiliado = buscarAfiliado,
+                FiltroEstado = filtroEstado,
+                Paginador = new Paginador()
+                {
+                    PaginaActual = pagina,
+                    RegistrosPorPagina = registrosPorPagina,
+                    TotalRegistros = totalRegistros
+                }
+            };
+
+            // Mantener los filtros al cambiar de página
+            if (!string.IsNullOrEmpty(buscarAfiliado)) modelo.Paginador.ValoresQueryString.Add("buscarAfiliado", buscarAfiliado);
+            modelo.Paginador.ValoresQueryString.Add("filtroEstado", filtroEstado);
+
+            // Opciones para el desplegable de filtros en la vista
+            var opciones = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Activos", Text = "Pendientes y En Proceso" },
+                new SelectListItem { Value = "Resueltos", Text = "Solo Resueltos" },
+                new SelectListItem { Value = "Todos", Text = "Ver Todos" }
+            };
+
+            // Envolvemos la lista en un "SelectList" y le pasamos "filtroEstado" 
+            // para que el sistema sepa cuál debe quedar seleccionado en pantalla.
+            ViewBag.OpcionesEstado = new SelectList(opciones, "Value", "Text", filtroEstado);
+
+            return View(modelo);
         }
 
-        // GET: Tickets/Details/5
+        // GET: Tickets/Details/5 (PÚBLICO)
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
 
             var ticket = await _context.Tickets
-                .Include(t => t.Afiliado)       // Datos del afiliado
-                .Include(t => t.Detalles)       // Historial
-                .ThenInclude(d => d.Estado)     // Descripciones de estados
+                .Include(t => t.Afiliado)
+                .Include(t => t.Detalles!)
+                .ThenInclude(d => d.Estado)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (ticket == null) return NotFound();
 
-            // --- NUEVO: Cargar la lista de estados para el formulario de evolución ---
             ViewData["ListaEstados"] = new SelectList(_context.Estados, "Id", "Descripcion");
-
             return View(ticket);
         }
 
-        // GET: Tickets/Create
+        // 🔒 CREATE, EDIT Y DELETE AHORA REQUIEREN LOGIN
+        [Authorize]
         public async Task<IActionResult> Create()
         {
-            // PROYECCIÓN DE DATOS:
-            // Se crea una lista con una nueva propiedad "NombreCompleto"
             var listaAfiliados = await _context.Afiliados
                 .Select(a => new {
                     Id = a.Id,
@@ -63,45 +134,31 @@ namespace GestionTickets_Lab4.Controllers
                 .OrderBy(a => a.NombreCompleto)
                 .ToListAsync();
 
-            // Ahora le decimos al SelectList que use "NombreCompleto" como valores a mostrar
             ViewData["AfiliadoId"] = new SelectList(listaAfiliados, "Id", "NombreCompleto");
-
             return View();
         }
 
-        // POST: Tickets/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize] // 🔒
         public async Task<IActionResult> Create([Bind("Id,Observacion,AfiliadoId")] Ticket ticket)
         {
-            // Forzamos la fecha al momento actual (para que no venga null o vacía del formulario)
             ticket.FechaSolicitud = DateTime.Now;
-
-            // Quitamos la validación de 'Afiliado' y 'Detalles' para que el ModelState no de error 
-            // (ya que son propiedades de navegación que no vienen del formulario)
             ModelState.Remove("Afiliado");
             ModelState.Remove("Detalles");
 
             if (ModelState.IsValid)
             {
-                // PASO 1: Guardar la Cabecera (El Ticket en sí)
                 _context.Add(ticket);
-                await _context.SaveChangesAsync(); // Aquí SQL Server genera el ID del Ticket
+                await _context.SaveChangesAsync();
 
-                // PASO 2: Generar el Detalle Automático (Estado "Pendiente")
+                var estadoPendiente = await _context.Estados.FirstOrDefaultAsync(e => e.Descripcion == "Pendiente");
 
-                // Buscamos el ID del estado "Pendiente" en la base de datos
-                var estadoPendiente = await _context.Estados
-                                            .FirstOrDefaultAsync(e => e.Descripcion == "Pendiente");
-
-                // Validación de seguridad: Si no existe el estado, no podemos crear el detalle
                 if (estadoPendiente != null)
                 {
                     var detalleInicial = new TicketDetalle
                     {
-                        TicketId = ticket.Id, // Usamos el ID recién creado
+                        TicketId = ticket.Id,
                         EstadoId = estadoPendiente.Id,
                         FechaEstado = DateTime.Now,
                         DescripcionPedido = "Inicio del reclamo: " + ticket.Observacion
@@ -114,8 +171,6 @@ namespace GestionTickets_Lab4.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Si algo falló, recargamos la lista CONCATENADA (Nombre + Apellido + DNI)
-            // para que el desplegable no se vea feo al recargar la página.
             var listaAfiliados = await _context.Afiliados
                 .Select(a => new {
                     Id = a.Id,
@@ -125,38 +180,27 @@ namespace GestionTickets_Lab4.Controllers
                 .ToListAsync();
 
             ViewData["AfiliadoId"] = new SelectList(listaAfiliados, "Id", "NombreCompleto", ticket.AfiliadoId);
-
             return View(ticket);
         }
 
-        // GET: Tickets/Edit/5
+        [Authorize] // 🔒
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var ticket = await _context.Tickets.FindAsync(id);
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+            if (ticket == null) return NotFound();
+
             ViewData["AfiliadoId"] = new SelectList(_context.Afiliados, "Id", "Apellido", ticket.AfiliadoId);
             return View(ticket);
         }
 
-        // POST: Tickets/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize] // 🔒
         public async Task<IActionResult> Edit(int id, [Bind("Id,FechaSolicitud,Observacion,AfiliadoId")] Ticket ticket)
         {
-            if (id != ticket.Id)
-            {
-                return NotFound();
-            }
+            if (id != ticket.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -167,14 +211,8 @@ namespace GestionTickets_Lab4.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!TicketExists(ticket.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!TicketExists(ticket.Id)) return NotFound();
+                    else throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -182,35 +220,27 @@ namespace GestionTickets_Lab4.Controllers
             return View(ticket);
         }
 
-        // GET: Tickets/Delete/5
+        [Authorize] // 🔒
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var ticket = await _context.Tickets
                 .Include(t => t.Afiliado)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+
+            if (ticket == null) return NotFound();
 
             return View(ticket);
         }
 
-        // POST: Tickets/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize] // 🔒
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var ticket = await _context.Tickets.FindAsync(id);
-            if (ticket != null)
-            {
-                _context.Tickets.Remove(ticket);
-            }
+            if (ticket != null) _context.Tickets.Remove(ticket);
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
@@ -221,19 +251,13 @@ namespace GestionTickets_Lab4.Controllers
             return _context.Tickets.Any(e => e.Id == id);
         }
 
-        // POST: Tickets/AgregarDetalle
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize] // 🔒 Solo usuarios logueados pueden evolucionar un ticket
         public async Task<IActionResult> AgregarDetalle(int TicketId, int EstadoId, string Observacion)
         {
-            // Validamos que venga algo de texto
-            if (string.IsNullOrEmpty(Observacion))
-            {
-                // Si está vacío, recargamos la página sin hacer nada
-                return RedirectToAction("Details", new { id = TicketId });
-            }
+            if (string.IsNullOrEmpty(Observacion)) return RedirectToAction("Details", new { id = TicketId });
 
-            // Creamos el nuevo movimiento en el historial
             var nuevoDetalle = new TicketDetalle
             {
                 TicketId = TicketId,
@@ -245,7 +269,6 @@ namespace GestionTickets_Lab4.Controllers
             _context.Add(nuevoDetalle);
             await _context.SaveChangesAsync();
 
-            // Redirigimos a la misma página de detalles para ver el nuevo comentario agregado
             return RedirectToAction("Details", new { id = TicketId });
         }
     }
