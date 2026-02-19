@@ -256,17 +256,32 @@ namespace GestionTickets_Lab4.Controllers
 
                     while (!string.IsNullOrEmpty(sl.GetCellValueAsString(fila, 1)))
                     {
+                        // 1. Extraemos el DNI de la columna 3 del Excel
+                        string dniExcel = sl.GetCellValueAsString(fila, 3);
+
+                        // 2. VALIDACIÓN ANTI-DUPLICADOS: ¿Ya existe alguien con este DNI?
+                        bool yaExiste = _context.Afiliados.Any(a => a.DNI == dniExcel);
+
+                        if (yaExiste)
+                        {
+                            // Si ya existe, pasamos a la siguiente fila y saltamos esta iteración
+                            fila++;
+                            continue;
+                        }
+
+                        // 3. Si no existe, lo creamos e insertamos normalmente
                         var nuevoAfiliado = new Afiliado
                         {
                             Nombres = sl.GetCellValueAsString(fila, 1),
                             Apellido = sl.GetCellValueAsString(fila, 2),
-                            DNI = sl.GetCellValueAsString(fila, 3),
+                            DNI = dniExcel, // Usamos la variable que ya leímos arriba
                             FechaNacimiento = sl.GetCellValueAsDateTime(fila, 4)
                         };
 
                         _context.Add(nuevoAfiliado);
                         fila++;
                     }
+                    // 4. Guardamos todos los nuevos de golpe
                     await _context.SaveChangesAsync();
                 }
             }
